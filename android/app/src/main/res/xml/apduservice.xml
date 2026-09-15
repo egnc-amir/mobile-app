@@ -4,7 +4,7 @@
     android:requireDeviceUnlock="false">
     <aid-group
         android:category="other"
-        android:description="Business Card NDEF service">
+        android:description="@string/ndef_service_description">
         <aid-filter android:name="D2760000850101" />
     </aid-group>
 </host-apdu-service>

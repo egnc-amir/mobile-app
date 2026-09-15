@@ -4,4 +4,5 @@
     <string name="title_activity_main">Business Card Mobile</string>
     <string name="package_name">bn.gov.egc.businesscard.mobile</string>
     <string name="custom_url_scheme">bn.gov.egc.businesscard.mobile</string>
+    <string name="ndef_service_description">Business Card NDEF service</string>
 </resources>
