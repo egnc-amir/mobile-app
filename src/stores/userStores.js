@@ -22,33 +22,45 @@ export const useUserStore = defineStore('user', () => {
   const isAuthenticated = ref(false)
   const loading = ref(false)
 
+  const defaultUser = () => ({
+    id: '',
+    token: '',
+    edit_name: '',
+    email: '',
+    phone_number: '',
+    office_number: '',
+    job_position: '',
+    agency: '',
+    ministry: '',
+    address: '',
+    login_address: '',
+    website: '',
+    picture: 'card_bn/uploads/your-photo.png',
+  })
+
   // Restore auth user
   if (localStorage.getItem('authUser')) {
-    user.value = JSON.parse(localStorage.getItem('authUser'))
-    isAuthenticated.value = true
+    try {
+      const restored = JSON.parse(localStorage.getItem('authUser'))
+      if (restored && typeof restored === 'object' && !Array.isArray(restored)) {
+        user.value = { ...defaultUser(), ...restored }
+        isAuthenticated.value = true
+      } else {
+        localStorage.removeItem('authUser')
+      }
+    } catch {
+      localStorage.removeItem('authUser')
+    }
   }
 
   const login = (userData) => {
-    user.value = userData
+    user.value = { ...defaultUser(), ...(userData || {}) }
     isAuthenticated.value = true
-    localStorage.setItem('authUser', JSON.stringify(userData))
+    localStorage.setItem('authUser', JSON.stringify(user.value))
   }
 
   const logout = () => {
-    user.value = {
-      token: '',
-      edit_name: '',
-      email: '',
-      phone_number: '',
-      office_number: '',
-      job_position: '',
-      agency: '',
-      ministry: '',
-      address: '',
-      login_address: '',
-      website: '',
-      picture: 'card_bn/uploads/your-photo.png',
-    }
+    user.value = defaultUser()
     isAuthenticated.value = false
     localStorage.removeItem('authUser')
   }

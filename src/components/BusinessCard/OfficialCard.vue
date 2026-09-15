@@ -39,7 +39,7 @@
         </button>
 
         <a
-          :href="`/business-card/api/download-vcard/${user.token}`"
+          :href="downloadVcardUrl"
           class="btn btn-secondary btn-sm"
         >
           Save Contact
@@ -133,6 +133,25 @@ const externalQrImageSrc = computed(
     `https://api.katalyst.gov.bn/qr/v1/codes?text=${encodeURIComponent(publicCardUrl.value)}`,
 )
 
+const apiBaseUrl = computed(() => {
+  const rawBase = String(api.defaults.baseURL || '/business-card/api').trim()
+  const normalizedBase = rawBase.replace(/\/+$/, '')
+
+  if (/^https?:\/\//i.test(normalizedBase)) {
+    return normalizedBase
+  }
+
+  const origin = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : ''
+  const prefixedBase = normalizedBase.startsWith('/') ? normalizedBase : `/${normalizedBase}`
+
+  return `${origin}${prefixedBase}`
+})
+
+const downloadVcardUrl = computed(() => {
+  const token = user.value?.token || route.params.token || ''
+  return `${apiBaseUrl.value}/download-vcard/${encodeURIComponent(String(token))}`
+})
+
 // ✅ IMPORTANT:
 // If picture exists in DB -> use Laravel proxy endpoint (it adds Bearer token to FileShare)
 // If empty -> fallback to /your-photo.png (vue/public)
@@ -141,9 +160,7 @@ const profileSrc = computed(() => {
 
   // if DB has picture (filename), show from API proxy
   if (user.value?.picture && String(user.value.picture).trim() !== '') {
-    // If your axios baseURL already includes /api, then DON'T use api.defaults.baseURL here.
-    // Use relative path so it works in both localhost + IIS:
-    return `/business-card/api/profile-picture/${token}?t=${Date.now()}`
+    return `${apiBaseUrl.value}/profile-picture/${encodeURIComponent(String(token || ''))}?t=${Date.now()}`
   }
 
   // fallback from Vue public/
@@ -160,11 +177,49 @@ const mapAddressUrl = computed(
   () => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText.value)}`,
 )
 
+const getValue = (obj, keys) => {
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') {
+      return obj[key]
+    }
+  }
+  return ''
+}
+
+const normalizeUserPayload = (payload) => {
+  const source = Array.isArray(payload) ? payload[0] : payload
+  if (!source || typeof source !== 'object') return null
+
+  const normalized = {
+    ...store.user,
+    ...source,
+    id: getValue(source, ['id', 'ID']) || store.user.id,
+    token: getValue(source, ['token', 'TOKEN']) || String(route.params.token || ''),
+    edit_name: getValue(source, ['edit_name', 'EDIT_NAME', 'NAME', 'name']),
+    email: getValue(source, ['email', 'EMAIL']),
+    phone_number: getValue(source, ['phone_number', 'PHONE_NUMBER']),
+    office_number: getValue(source, ['office_number', 'OFFICE_NUMBER']),
+    job_position: getValue(source, ['job_position', 'JOB_POSITION', 'login_job_position']),
+    agency: getValue(source, ['agency', 'AGENCY', 'login_agency']),
+    ministry: getValue(source, ['ministry', 'MINISTRY', 'login_ministry']),
+    address: getValue(source, ['address', 'ADDRESS']),
+    login_address: getValue(source, ['login_address', 'LOGIN_ADDRESS']),
+    website: getValue(source, ['website', 'WEBSITE']),
+    picture: getValue(source, ['picture', 'PICTURE']) || store.user.picture,
+  }
+
+  return normalized
+}
+
 const fetchUser = async () => {
   try {
     const token = route.params.token
     const res = await api.get('/get_user', { params: { token } })
-    store.login(res.data)
+    const normalized = normalizeUserPayload(res.data)
+    if (!normalized) {
+      throw new Error('Empty user payload')
+    }
+    store.login(normalized)
   } catch {
     invalidToken.value = true
   } finally {
