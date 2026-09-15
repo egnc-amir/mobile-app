@@ -3,8 +3,8 @@ package bn.gov.egc.businesscard.mobile.plugins;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.getcapacitor.annotation.PluginMethod;
 
 @CapacitorPlugin(name = "HceBridge")
 public class HceBridgePlugin extends Plugin {
