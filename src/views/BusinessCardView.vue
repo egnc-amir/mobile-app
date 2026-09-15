@@ -25,6 +25,17 @@
         <button class="btn btn-success" :disabled="!canShare" @click="shareCard">Share</button>
       </div>
 
+      <div class="nfc-row">
+        <button class="btn btn-outline-primary" :disabled="!canShare" @click="enableNfcCard">
+          Enable NFC Card
+        </button>
+        <button class="btn btn-outline-secondary" :disabled="!nfcEnabled" @click="disableNfcCard">
+          Disable NFC Card
+        </button>
+      </div>
+
+      <p class="nfc-help">{{ nfcStatus }}</p>
+
       <a
         v-if="canShare"
         :href="fullCardUrl"
@@ -42,8 +53,10 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Share } from '@capacitor/share'
+import { Capacitor } from '@capacitor/core'
 import OfficialCard from '@/components/BusinessCard/OfficialCard.vue'
 import GovBanner from '@/components/GovBanner.vue'
+import { HceBridge } from '@/plugins/hceBridge'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,6 +75,8 @@ const canShare = computed(() => currentToken.value.length > 0)
 const fullCardUrl = computed(
   () => `https://preprod-katalyst.egc.gov.bn/business-card/${encodeURIComponent(currentToken.value)}`,
 )
+const nfcEnabled = ref(false)
+const nfcStatus = ref('Enable NFC Card to let another device tap and receive your business card link.')
 
 const openCard = async () => {
   const token = String(tokenDraft.value || '').trim()
@@ -83,6 +98,38 @@ const shareCard = async () => {
     })
   } catch (error) {
     console.error('Share failed', error)
+  }
+}
+
+const enableNfcCard = async () => {
+  if (!canShare.value) return
+
+  if (Capacitor.getPlatform() !== 'android') {
+    nfcStatus.value = 'NFC card emulation is available only on Android.'
+    return
+  }
+
+  try {
+    await HceBridge.setCardPayload({ url: fullCardUrl.value })
+    await HceBridge.enableHce()
+    nfcEnabled.value = true
+    nfcStatus.value = 'NFC card enabled. Keep this screen open, then tap with another NFC-enabled phone.'
+  } catch (error) {
+    nfcEnabled.value = false
+    nfcStatus.value =
+      'NFC setup is incomplete in the Android native project. Build and sync the app after adding HCE files.'
+    console.error('Enable NFC card failed', error)
+  }
+}
+
+const disableNfcCard = async () => {
+  try {
+    await HceBridge.disableHce()
+  } catch (error) {
+    console.error('Disable NFC card failed', error)
+  } finally {
+    nfcEnabled.value = false
+    nfcStatus.value = 'NFC card is disabled.'
   }
 }
 </script>
@@ -140,6 +187,19 @@ const shareCard = async () => {
   overflow-wrap: anywhere;
 }
 
+.nfc-row {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.nfc-help {
+  margin: 10px 0 0;
+  color: #5d6f83;
+  font-size: 0.9rem;
+}
+
 .card-container {
   min-height: auto;
   overflow-x: hidden;
@@ -181,6 +241,11 @@ const shareCard = async () => {
 @media (min-width: 680px) {
   .top-row {
     grid-template-columns: 1fr auto auto;
+  }
+
+  .nfc-row {
+    grid-template-columns: auto auto;
+    justify-content: flex-start;
   }
 
   .top-shell {
