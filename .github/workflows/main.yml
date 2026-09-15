@@ -60,20 +60,27 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
+        shell: bash
         run: |
+          set -o pipefail
           chmod +x gradlew
           ./gradlew --no-daemon clean :app:assembleDebug --stacktrace --info 2>&1 | tee ../gradle-build.log
 
+      - name: List APK files
+        if: always()
+        run: find android -type f -name "*.apk" -print
+
       - name: Upload APK artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: app-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
 
       - name: Upload Gradle log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gradle-build-log
           path: gradle-build.log
