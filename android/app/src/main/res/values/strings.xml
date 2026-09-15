@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Business Card Mobile</string>
+    <string name="title_activity_main">Business Card Mobile</string>
+    <string name="package_name">bn.gov.egc.businesscard.mobile</string>
+    <string name="custom_url_scheme">bn.gov.egc.businesscard.mobile</string>
+</resources>

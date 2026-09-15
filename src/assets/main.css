@@ -1,0 +1,19 @@
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+
+/* 🔥 REMOVE PHOENIX NAVBAR GAP ON MOBILE */
+@media (max-width: 767px) {
+  .content,
+  .page-content,
+  .container-fluid,
+  .container,
+  main {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
